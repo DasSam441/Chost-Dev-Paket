@@ -179,8 +179,10 @@ export class ChostClient {
   return verifyResult(record,this.deviceIdentity.publicKey,{deviceId:this.deviceIdentity.deviceId,bootId});
  }
  async verifyLiveResults(records,bootId){
-  if(!this.info?.features?.includes('signed-results-v1'))return;
-  for(const record of records)if(isFinalResult(record))await this.verifyResult(record,{bootId});
+  const proofRequired=this.info?.features?.includes('signed-results-v1');
+  for(const record of records){
+   if(isFinalResult(record)&&(proofRequired||Object.hasOwn(record,'resultProof')))await this.verifyResult(record,{bootId});
+  }
  }
  async *subscribe(cursor,{positionRevision,signal}={}){
   if(signal?.aborted)return;
