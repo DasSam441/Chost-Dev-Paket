@@ -18,6 +18,36 @@ async function verifyJws(compact,key,expectedType,kid){
  if(!await crypto.subtle.verify({name:'ECDSA',hash:'SHA-256'},imported,unbase64url(parts[2]),utf8.encode(parts[0]+'.'+parts[1])))throw Error('Signaturprüfung fehlgeschlagen.');
  return {header,payload,key:publicKey};
 }
+const hexId=value=>typeof value==='string'&&/^[0-9a-f]{32}$/.test(value);
+const isFinalResult=record=>record?.type==='session'&&record.state==='finished';
+const hasFields=(object,fields)=>object&&Object.keys(object).length===fields.length&&fields.every(field=>Object.hasOwn(object,field));
+
+export async function verifyResult(record,deviceKey,{deviceId,bootId}={}){
+ if(!isFinalResult(record)||!hexId(record.sessionId)||!hexId(record.id)||
+    !Array.isArray(record.results)||record.results.length>16)throw Error('Ungültiges Abschlussergebnis.');
+ if(counter(record.sequence)===0n)throw Error('Ungültige Ergebnisversion.');
+ counter(record.clockMs);
+ const key=jwk(deviceKey);
+ const {payload}=await verifyJws(record.resultProof,key,'chost-result+jws',await thumbprint(key));
+ if(!hasFields(payload,['version','deviceId','bootId','sessionId','id','sequence','clockMs','sha256'])||
+    payload.version!==1||!hexId(payload.deviceId)||!hexId(payload.bootId)||
+    (deviceId!==undefined&&payload.deviceId!==deviceId)||(bootId!==undefined&&payload.bootId!==bootId)||
+    ['sessionId','id','sequence','clockMs'].some(field=>payload[field]!==record[field]))
+  throw Error('Signatur gehört zu einem anderen Ergebnis.');
+ const rows=record.results.map(row=>{
+  if(!hasFields(row,['driver','position','laps','totalMs','bestMs','penaltyMs']))throw Error('Ungültige Ergebniszeile.');
+  const driver=row.driver;
+  if(!hasFields(driver,['id','name','mac','vehicleName','connected'])||
+     !hexId(driver.id)||typeof driver.name!=='string'||typeof driver.vehicleName!=='string'||
+     typeof driver.mac!=='string'||!/^[0-9A-F]{12}$/.test(driver.mac)||typeof driver.connected!=='boolean'||
+     ![row.position,row.laps,row.totalMs,row.penaltyMs].every(Number.isSafeInteger)||
+     !(row.bestMs===null||Number.isSafeInteger(row.bestMs)))throw Error('Ungültige Ergebniszeile.');
+  return [[driver.id,driver.name,driver.mac,driver.vehicleName,driver.connected],
+   row.position,row.laps,row.totalMs,row.bestMs,row.penaltyMs];
+ });
+ if(await hash(JSON.stringify(rows))!==payload.sha256)throw Error('Ergebnis-Prüfsumme stimmt nicht.');
+ return payload;
+}
 function u32(value){const out=new Uint8Array(4);new DataView(out.buffer).setUint32(0,value,false);return out;}
 function join(...parts){const out=new Uint8Array(parts.reduce((sum,p)=>sum+p.length,0));let at=0;for(const p of parts){out.set(p,at);at+=p.length;}return out;}
 function sized(value){const bytes=utf8.encode(value);return join(u32(bytes.length),bytes);}
@@ -105,6 +135,7 @@ export class ChostClient {
   const proof=await encrypt(this.keys.request,this.id,0n,plain);delete plain.password;
   const reply=await decrypt(this.keys.response,this.id,0n,await this.raw('connect',JSON.stringify({grant:issued.grant,proof})));
   if(reply.status!==200)throw new ChostError(reply);this.sequence=0n;this.pending=null;this.bootId=challenge.bootId;
+  this.deviceIdentity={deviceId:challenge.deviceId,publicKey:signed.key};
   this.reconnectOptions={permissions:[...permissions],sessionSeconds,actor};
   return {...reply,deviceKeyId:this.expectedDevice};
  }
@@ -142,6 +173,14 @@ export class ChostClient {
   const args={bootId:this.bootId,cursor,limit};
   if(positionRevision!==undefined)args.positionRevision=positionRevision;
   return this.request('events',args);
+ }
+ verifyResult(record,{bootId}={}){
+  if(!this.deviceIdentity)throw Error('Zuerst den Geräteschlüssel bestätigen.');
+  return verifyResult(record,this.deviceIdentity.publicKey,{deviceId:this.deviceIdentity.deviceId,bootId});
+ }
+ async verifyLiveResults(records,bootId){
+  if(!this.info?.features?.includes('signed-results-v1'))return;
+  for(const record of records)if(isFinalResult(record))await this.verifyResult(record,{bootId});
  }
  async *subscribe(cursor,{positionRevision,signal}={}){
   if(signal?.aborted)return;
@@ -194,6 +233,7 @@ export class ChostClient {
      if(batch.status!==200)throw Error('Ungültiger Ereignisstatus.');
      if(batch.kind==='heartbeat')continue;
      if(batch.kind!=='events'||!Array.isArray(batch.events)||!/^\d+:\d+$/.test(batch.cursor))throw Error('Ungültige Ereignisdaten.');
+     await this.verifyLiveResults(batch.events.map(event=>event.record),bootId);
      yield batch;
     }
     if(buffer.length>70000)throw Error('Ereignisrahmen zu groß.');
@@ -229,6 +269,7 @@ export class ChostClient {
    let latest=after;
    for(const record of records)if(counter(record.sequence)!==++latest)return false;
    if(latest===after)return false;
+   await this.verifyLiveResults(records,page.bootId);
    await deliver(onBatch,{bootId:page.bootId,recovered:true,events:records.map(record=>({source:'durable',record}))});
    after=latest;
    if(sessionId&&!page.more)sessionId=undefined;

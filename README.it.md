@@ -31,6 +31,8 @@ Il server usa TLS reciproco per ottenere un’autorizzazione legata al browser, 
 
 Dal firmware 0.2.95, l’ESP32 invia le misurazioni in tempo reale attraverso il canale locale cifrato. Il modulo si riconnette con l’ultimo cursore applicato e recupera i dati persistenti ancora disponibili. Usa un `AbortController` per `liveView` e annullalo quando chiudi la vista. I client esistenti possono ancora usare `events()`. Elimina i duplicati per ID del record o, per gli eventi in diretta, per ID di avvio e sequenza. Sostituisci le posizioni solo se ricevi un elenco. [Protocollo in tedesco](README.md#verschlüsselter-live-kanal-ab-0295)
 
+Dal firmware 0.2.96 l’ESP32 firma i risultati finali e le correzioni con la propria chiave. Il canale verifica automaticamente la firma. Per i risultati archiviati usa `host.verifyResult(record)` oppure il verificatore offline con la chiave pubblica confermata. [Protocol](README.md#signierte-abschlussergebnisse-ab-0296).
+
 Nella configurazione gli indici dei settori partono da 1. Nelle posizioni e nello **snapshot** partono da 0. La pista libera non usa un codice dei moduli o punti di settore legati ai moduli. Con più bersagli i rilevamenti vengono raggruppati. I tempi sul giro hanno precisione al millisecondo. La posizione rappresenta l’ultimo dato ricevuto dall’app.
 
 Su un ESP32-C5 sono stati verificati l’accesso con certificato, i permessi, le modifiche, la lettura e la creazione di una sala dalla pagina dell’host. La trasmissione dei dati è stata verificata anche con test automatici. Questa verifica non comprende una gara reale con due ESP32. [Riferimento del protocollo in tedesco](README.md) · [Rapporto di prova in tedesco](PRUEFSTAND.md)

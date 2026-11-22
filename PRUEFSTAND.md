@@ -1,5 +1,18 @@
 # Prüfstand der Betreiberanbindung
 
+## Signierte Abschlussergebnisse mit Firmware 0.2.96
+
+C++ und Browsermodul haben dieselben signierten Ergebnisse für 16 Fahrer
+einschließlich Unicode-Namen, Strafzeiten und Ergebnisrevision geprüft.
+Signaturen bleiben beim Speichern und Laden des Zeitnahmejournals erhalten.
+Ein alter Journaleintrag ohne Signatur bleibt lesbar. Veränderte Zeiten,
+fehlende Ergebnisfelder, ein fremder Geräteschlüssel und eine falsche
+Bootkennung wurden abgewiesen.
+
+Der C5 meldete die neue Funktion, der zertifizierte Live-Kanal und die
+Rennleitung blieben funktionsfähig. Sieben vorhandene Läufe blieben erhalten.
+Die Ergebnisprüfung verwendete Testdaten.
+
 ## Verschlüsselter Live-Kanal mit Firmware 0.2.95
 
 Am ESP32-C5 mit dem produktiven Zertifikatsdienst und dem Browsermodul

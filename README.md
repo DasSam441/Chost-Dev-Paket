@@ -5,7 +5,8 @@
 Entwicklerdokumentation für den ESP32-C5. Der Anschluss verwendet
 **chost-timing v2**. Raumsteuerung ist ab Firmware **0.2.92**, die Umschaltung des ESP-Betriebsmodus ab **0.2.93** verfügbar.
 Ab **0.2.95** kann der ESP32 Ereignisse über einen verschlüsselten Live-Kanal
-direkt an die Zeitnahme senden.
+direkt an die Zeitnahme senden. Ab **0.2.96** enthält jedes neue
+Abschlussergebnis eine Prüfsumme und Gerätesignatur.
 
 Der C-Host verbindet die Carrera-App mit einer Zeitnahme, die im Browser läuft.
 Die Betreiberfreigabe kommt von silentserver.eu. Messdaten und Rennleitungsbefehle
@@ -377,6 +378,54 @@ oder `null`, `profileRevision` und `lapRevision`. Detail-`section` ist `profile`
 `profileRevision`. Bei `client_data_changed` Kurzprofil neu laden und Seiten
 von vorn lesen. Antworten enthalten `offset`, `total`, `nextOffset`, `more`.
 Für `profile` ist nur Offset 0 zulässig. Höchstens 8 Einträge pro Detailseite.
+
+## Signierte Abschlussergebnisse ab 0.2.96
+
+`GET /timing/v2/info` meldet `signed-results-v1`. Bei `type:"session"` und
+`state:"finished"` enthält das Ergebnisfeld `resultProof` ein kompaktes JWS.
+Der Nachweis wird beim journalisierten Laufabschluss einmal erstellt und
+über den Live-Kanal, `events`, `history` und `recover` mit derselben
+Ergebnisfassung ausgeliefert. Jede spätere Korrektur hat dieselbe Laufkennung
+und eine höhere Sequenz mit eigener Signatur. Verwende die höchste gültig
+signierte Sequenz für einen Lauf.
+
+Das Browsermodul prüft neue Ergebnisse in `subscribe()` und `followEvents()`
+automatisch. Bei direkter Abfrage lässt sich das Ergebnis vor dem Speichern
+mit `await host.verifyResult(record)` prüfen. Ergebnisse aus Firmware vor
+0.2.96 können ohne `resultProof` im Archiv stehen.
+
+Für einen späteren Nachweis die vollständige Ergebnismeldung und den beim
+Verbinden bestätigten öffentlichen Schlüssel speichern. Der Client stellt
+ihn in `host.deviceIdentity.publicKey` bereit. Schlüsselfingerabdruck und
+Gerätekennung ordnet die Zeitnahme dem bereits bestätigten Gerät zu. Das
+aus `chost-client.mjs` importierbare `verifyResult(record, publicKey, {deviceId})`
+prüft mit diesem vertrauenswürdigen Schlüssel auch ohne laufende ESP-Verbindung.
+
+### Signaturformat
+
+- JWS-Kopf mit `alg:"ES256"`, `typ:"chost-result+jws"` und `kid` als
+  JWK-Fingerabdruck des ESP. Der eigene P-256-Geräteschlüssel signiert es.
+- Die signierten Felder sind `version:1`, `deviceId`, `bootId`, `sessionId`,
+  `id`, `sequence`, `clockMs` und `sha256`. Die beiden Zähler sind kanonische
+  Dezimalstrings. `sha256` ist ungepolstertes Base64url über 32 Byte.
+- SHA-256 wird über kompaktes UTF-8-JSON ohne Leerzeichen zwischen Werten und
+  ohne Zeilenende gebildet. Erzeuge ein Array aus den folgenden Zeilen in der
+  Reihenfolge von `results`. Stringwerte und Ganzzahlen unverändert übernehmen,
+  `bestMs:null` bleibt `null`. Der Nachweis deckt die vollständige
+  Ergebnisliste ab. Einzelne Live-Runden- und Sektormeldungen bleiben Teil des
+  verschlüsselten Messdatenkanals.
+
+```js
+const rows = record.results.map(({driver, position, laps, totalMs, bestMs, penaltyMs}) =>
+  [[driver.id, driver.name, driver.mac, driver.vehicleName, driver.connected],
+   position, laps, totalMs, bestMs, penaltyMs]);
+const canonicalBytes = new TextEncoder().encode(JSON.stringify(rows));
+```
+
+Die Zeitnahme prüft vor der Übernahme die Signatur gegen den bestätigten
+Geräteschlüssel, die Bindung an das Ergebnis und den Hash über die
+Ergebnisliste. Das Betreiberzertifikat berechtigt weiterhin zum Zugriff auf
+die Schnittstelle.
 
 ## Rennleitung
 

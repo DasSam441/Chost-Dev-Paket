@@ -31,6 +31,8 @@ El servidor de cronometraje usa TLS mutuo para solicitar una autorización vincu
 
 Desde el firmware 0.2.95, el ESP32 envía las mediciones por el canal local cifrado según llegan. El módulo se vuelve a conectar con el último cursor aplicado y recupera los datos guardados que estén disponibles. Usa un `AbortController` para `liveView` y cancélalo al cerrar la vista. Los clientes existentes pueden seguir usando `events()`. Elimina duplicados por ID de registro duradero o por ID de arranque y secuencia. Sustituye las posiciones solo si recibes una lista. [Protocolo en alemán](README.md#verschlüsselter-live-kanal-ab-0295)
 
+Desde 0.2.96 el ESP32 firma los resultados finales y sus correcciones con su clave de dispositivo. El canal verifica la firma automáticamente. Para resultados archivados, usa `host.verifyResult(record)` o el verificador sin conexión con la clave pública confirmada. [Protocol](README.md#signierte-abschlussergebnisse-ab-0296).
+
 En los ajustes, los índices de los sectores empiezan en 1. En las posiciones y en **snapshot**, empiezan en 0. La pista libre carece de código de módulos y de puntos de sector por módulo. Con varios objetivos se agrupan detecciones. Los tiempos de vuelta se expresan con precisión de milisegundos. La posición corresponde al último mensaje recibido de la aplicación.
 
 En un ESP32-C5 se verificaron la autorización con certificado, los permisos, los cambios de configuración, la lectura y la creación de una sala desde el equipo. Los datos de cronometraje se comprobaron también de forma automatizada. La prueba no incluyó una carrera real con dos ESP32. [Referencia del protocolo en alemán](README.md) · [Informe de pruebas en alemán](PRUEFSTAND.md)

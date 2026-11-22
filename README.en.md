@@ -31,6 +31,8 @@ The backend uses mutual TLS to request a grant, which is bound to the browser, E
 
 From firmware 0.2.95, the ESP32 sends measurements as they arrive over the encrypted local connection. The browser module reconnects with the last applied cursor and retrieves available durable data after a gap. Use an `AbortController` for `liveView` and abort it when closing the view. Existing clients can still call `events()`. Deduplicate durable records by ID and live records by boot ID and sequence. Replace positions only when a list is supplied. [Live stream protocol in German](README.md#verschlüsselter-live-kanal-ab-0295)
 
+From 0.2.96 the host signs final results and corrections with its device key. The stream verifies the proof automatically. For archived events use `host.verifyResult(record)` or the exported offline verifier with the confirmed public key. [Protocol](README.md#signierte-abschlussergebnisse-ab-0296).
+
 Sector indices in configuration start at 1. Position and snapshot sector indices start at 0. A free track has no module code or module sector list. A target count above one groups target detections. Race lap times have millisecond precision. Position reports describe the last update received from the app.
 
 On a real C5 we verified certificate authorization, permitted and denied controls, settings round trips, reading, and creating a room from the host page. Timing transport and data processing also passed automated tests. This test did not include a driven race across two physical hosts. [Protocol reference in German](README.md) · [Test report in German](PRUEFSTAND.md)
