@@ -191,6 +191,9 @@ Rennleitung: Training/Runden-/Zeitrennen, Runden-/Zeitvorgaben, Startbereitschaf
 Vorlauf, Ampelminimum/-maximum, Strecke, Mindestzeit, Sektoren und gemeinsame
 Fahreinstellungen. Der ESP validiert und bestätigt alles, verwaltet eine
 einzige schreibende Rennleitung, erkennt doppelte Befehle und Konflikte.
+Ab 0.2.98 kann die Rennleitung mit `configuration.fakeHost` die Felder
+`accountName` und `carName` getrennt für die Carrera-Lobby konfigurieren.
+Die bestehende Berechtigung `race.control` gilt dafür.
 Lauf bleibt bei Verbindungsabbruch auf dem ESP aktiv. Lokale Eigentümerbedienung
 und Raumersteller-Vorgaben bleiben maßgeblich. WLAN, Kennwort und Firmware
 werden nicht ohne gesonderte Geräteverwaltungsrechte geöffnet.

@@ -32,6 +32,8 @@ Il server usa TLS reciproco per ottenere un’autorizzazione legata al browser, 
 
 Dal firmware 0.2.95, l’ESP32 invia le misurazioni in tempo reale attraverso il canale locale cifrato. Il modulo si riconnette con l’ultimo cursore applicato e recupera i dati persistenti ancora disponibili. Usa un `AbortController` per `liveView` e annullalo quando chiudi la vista. I client esistenti possono ancora usare `events()`. Elimina i duplicati per ID del record o, per gli eventi in diretta, per ID di avvio e sequenza. Sostituisci le posizioni solo se ricevi un elenco. [Protocollo in tedesco](README.md#verschlüsselter-live-kanal-ab-0295)
 
+Dal firmware 0.2.98, `configure({fakeHost: {accountName, carName}}, revision)` imposta i nomi dell’account e dell’auto dell’host virtuale. Leggi i valori con `state()`.
+
 Dal firmware 0.2.97, `onLapPreview({id, record})` mostra il giro prima della scrittura nella memoria flash. Un record nullo rimuove l’anteprima. Usa il record confermato di `onBatch` con lo stesso ID per la classifica e l’archivio.
 
 Dal firmware 0.2.96 l’ESP32 firma i risultati finali e le correzioni con la propria chiave. Il canale verifica automaticamente la firma. Per i risultati archiviati usa `host.verifyResult(record)` oppure il verificatore offline con la chiave pubblica confermata. [Protocol](README.md#signierte-abschlussergebnisse-ab-0296).

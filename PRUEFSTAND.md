@@ -1,5 +1,19 @@
 # Prüfstand der Betreiberanbindung
 
+## Fake-Host-Namen und Lobbybereitschaft mit Firmware 0.2.98
+
+Am C5 mit produktiver Zertifikatsfreigabe beide Namen gesetzt und im
+Carrera-Protokoll 1.2.8 geprüft. Die über das Webformular gespeicherten
+Namen wurden über die zertifizierte Schnittstelle und im Carrera-Protokoll
+1.2.6 zurückgelesen. Beim Umbenennen blieb die Startfreigabe erhalten.
+
+Eine Fertig-Meldung markierte den Fahrer als bereit, während der manuelle
+Start auf die Freigabe wartete. Der Protokolltest reproduzierte vor der
+Korrektur eine verworfene Fertig-Meldung während der Lobbysynchronisierung.
+Danach startete der Wechsel in die Fahransicht nach der Synchronisierung
+für beide Versionsformate. Auch der spätere Einstieg in ein laufendes
+Training wurde geprüft. Sieben gespeicherte Läufe blieben erhalten.
+
 ## Schnelle Rundenanzeige mit Firmware 0.2.97
 
 Der C++-Test speiste 1279 gemessene Runden für 16 Fahrer ein. Jede frühe

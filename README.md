@@ -8,6 +8,7 @@ Ab **0.2.95** kann der ESP32 Ereignisse über einen verschlüsselten Live-Kanal
 direkt an die Zeitnahme senden. Ab **0.2.96** enthält jedes neue
 Abschlussergebnis eine Prüfsumme und Gerätesignatur. Ab **0.2.97** können
 Zeitnahmen eine Rundenzeit bereits vor der Flash-Bestätigung anzeigen.
+Ab **0.2.98** sind Konto- und Autoname des Fake Hosts getrennt einstellbar.
 
 Der C-Host verbindet die Carrera-App mit einer Zeitnahme, die im Browser läuft.
 Die Betreiberfreigabe kommt von silentserver.eu. Messdaten und Rennleitungsbefehle
@@ -494,6 +495,26 @@ kann die Zeitnahme empfangene Runden-, Strafzeit- und Streckenereignisse
 verwenden. Die Carrera-Lobby, WLAN, Hostkennwort, Discord-Zugänge, Gerätediagnose
 und Firmwarewartung sind Aufgaben der lokalen Einrichtung.
 
+### Fake-Host-Namen ab 0.2.98
+
+`GET /timing/v2/info` meldet `fake-host-names-v1`. In der ESP-Oberfläche
+stehen die beiden Felder unter **Einrichtung → Fake Host**.
+Die zertifizierte Rennleitung kann dieselben Werte in einer leeren Lobby
+einzeln oder zusammen ändern. `director.configuration.fakeHost` und
+`snapshot.fakeHost` liefern die gespeicherten Namen.
+
+```js
+let director = await host.acquire();
+director = await host.configure({
+  fakeHost: {accountName: 'Rennleitung', carName: 'Pace Car'}
+}, director.revision);
+```
+
+Beide Namen sind 1 bis 61 UTF-8-Bytes lang und erscheinen in der Carrera-Lobby.
+Beim Aktualisieren bleiben ausgelassene Felder erhalten. Alte
+Konfigurationen verwenden für beide Felder den bisherigen Wert `Fake Host`.
+Eine reine Namensänderung lässt die Startfreigabe bestehen.
+
 ### Konfigurationsfelder
 
 Teiländerungen sind erlaubt; unbekannte Felder, falsche Typen und ungültige
@@ -502,6 +523,7 @@ Werte werden abgelehnt. Zahlen sind JSON-Zahlen, Booleans nur `true`/`false`.
 | Objekt | Felder und Grenzen |
 | --- | --- |
 | Wurzel | `clubName`: 0..100 UTF-8-Bytes; `lobbyName`: 1..61 UTF-8-Bytes |
+| `fakeHost` | `accountName`, `carName`: je 1..61 UTF-8-Bytes |
 | `race` | `mode`: `training`/`race`/`individual`; `format`: `laps`/`time`; `lapCount`: 1..1000; `durationSeconds`: 60..59940, volle Minuten; `startDelaySeconds`: 0..30; `yellowMinimumMs`/`yellowMaximumMs`: 1000..30000, Minimum ≤ Maximum; `startLights`: Boolean |
 | `track` | `type`: `modules`/`free`; `name`: 1..61 UTF-8-Bytes; `minimumLapSeconds`: 0..3600; `targetsPerLap`: 1..32 bei freier Strecke (ab 0.2.76); bei Modulen `code`, `sectorParts` |
 | `driving` | `drive`: 0..1; `wear`: 0..5; `steering`: 0..2; `steeringAssist`: 0..4; `brakeAssist`: 0..3; `wall`: 0..3; `tireMultiplier`/`fuelMultiplier`: 0..100; `penalty`, `yellowHostOnly`, `boost`: Boolean |
