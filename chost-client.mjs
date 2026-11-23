@@ -20,6 +20,7 @@ async function verifyJws(compact,key,expectedType,kid){
 }
 const hexId=value=>typeof value==='string'&&/^[0-9a-f]{32}$/.test(value);
 const isFinalResult=record=>record?.type==='session'&&record.state==='finished';
+const isTimedLap=record=>record?.type==='lap-correction'||(record?.type==='crossing'&&record.lap>0);
 const hasFields=(object,fields)=>object&&Object.keys(object).length===fields.length&&fields.every(field=>Object.hasOwn(object,field));
 
 export async function verifyResult(record,deviceKey,{deviceId,bootId}={}){
@@ -184,12 +185,13 @@ export class ChostClient {
    if(isFinalResult(record)&&(proofRequired||Object.hasOwn(record,'resultProof')))await this.verifyResult(record,{bootId});
   }
  }
- async *subscribe(cursor,{positionRevision,signal}={}){
+ async *subscribe(cursor,{positionRevision,signal,onLapPreview}={}){
   if(signal?.aborted)return;
   if(!this.info?.features?.includes('event-stream-v1'))throw new ChostError({error:'stream_not_supported'});
   const bootId=this.bootId;
   const args={bootId,cursor};
   if(positionRevision!==undefined)args.positionRevision=positionRevision;
+  if(typeof onLapPreview==='function'&&this.info.features.includes('lap-preview-v1'))args.lapPreview=true;
   const registration=await this.request('subscribe',args);
   const {subscription,streamKey}=registration;
   const bytes=unbase64url(streamKey);
@@ -201,6 +203,10 @@ export class ChostClient {
   signal?.addEventListener('abort',abort,{once:true});
   if(signal?.aborted)abort();
   let reader;
+  const previews=new Set(),confirmedLaps=new Set();
+  const clearPreview=async id=>{
+   if(previews.delete(id))await deliver(onLapPreview,{id,record:null});
+  };
   const timed=async action=>{
    const timer=setTimeout(abort,25000);
    try{return await action();}finally{clearTimeout(timer);}
@@ -234,9 +240,27 @@ export class ChostClient {
      if(batch.kind==='end')throw new ChostError(batch);
      if(batch.status!==200)throw Error('Ungültiger Ereignisstatus.');
      if(batch.kind==='heartbeat')continue;
+     if(batch.kind==='lap-preview'){
+      const record=batch.record;
+      if(!args.lapPreview||!isTimedLap(record)||!hexId(record.id)||!hexId(record.sessionId)||
+        !Number.isSafeInteger(record.durationMs)||record.durationMs<=0)
+       throw Error('Ungültige vorläufige Rundenmeldung.');
+      if(!confirmedLaps.has(record.id)&&!previews.has(record.id)){
+       if(previews.size>=64)await clearPreview(previews.values().next().value);
+       previews.add(record.id);
+       await deliver(onLapPreview,{id:record.id,record});
+      }
+      continue;
+     }
      if(batch.kind!=='events'||!Array.isArray(batch.events)||!/^\d+:\d+$/.test(batch.cursor))throw Error('Ungültige Ereignisdaten.');
      await this.verifyLiveResults(batch.events.map(event=>event.record),bootId);
+     const confirmed=args.lapPreview?batch.events.filter(event=>event.source==='durable'&&isTimedLap(event.record)):[];
+     for(const {record} of confirmed){
+      confirmedLaps.add(record.id);
+      if(confirmedLaps.size>128)confirmedLaps.delete(confirmedLaps.values().next().value);
+     }
      yield batch;
+     for(const {record} of confirmed)await clearPreview(record.id);
     }
     if(buffer.length>70000)throw Error('Ereignisrahmen zu groß.');
    }
@@ -248,6 +272,7 @@ export class ChostClient {
    abort();
    if(reader)await reader.cancel().catch(()=>{});
    signal?.removeEventListener('abort',abort);
+   for(const id of previews)await clearPreview(id);
   }
  }
  async recoverStreamRecords(previous,snapshot,onBatch,signal){
@@ -278,7 +303,7 @@ export class ChostClient {
   }
   return after===target;
  }
- async followEvents({onSnapshot,onBatch,onGap,signal,resume}={}){
+ async followEvents({onSnapshot,onBatch,onGap,onLapPreview,signal,resume}={}){
   if(!this.reconnectOptions)throw Error('Zuerst mit dem C-Host verbinden.');
   if([onSnapshot,onBatch,onGap].some(handler=>typeof handler!=='function'))throw TypeError('onSnapshot, onBatch und onGap sind erforderlich.');
   let state=resume,gap,reconnect=false,delay=250;
@@ -303,7 +328,7 @@ export class ChostClient {
      state={bootId:snapshot.bootId,cursor:snapshot.cursor,positionRevision:snapshot.positionRevision};
      gap=undefined;
     }
-    for await(const batch of this.subscribe(state.cursor,{positionRevision:state.positionRevision,signal})){
+    for await(const batch of this.subscribe(state.cursor,{positionRevision:state.positionRevision,signal,onLapPreview})){
      await deliver(onBatch,batch);
      state={bootId:batch.bootId,cursor:batch.cursor,positionRevision:batch.positionRevision};
      delay=250;

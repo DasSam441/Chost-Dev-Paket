@@ -1,5 +1,19 @@
 # Prüfstand der Betreiberanbindung
 
+## Schnelle Rundenanzeige mit Firmware 0.2.97
+
+Der C++-Test speiste 1279 gemessene Runden für 16 Fahrer ein. Jede frühe
+Meldung entsprach der zum Flash-Schreiben eingereihten Runde. Startmarken
+ohne Rundenzeit wurden ausgefiltert. Korrekturen behielten den Verweis auf
+die ursprüngliche Messung.
+
+Das Browsermodul prüfte frühe Meldung, bestätigten Datensatz mit gleicher
+Kennung, Unterdrückung später und doppelter Vorschauen, Abbruchbereinigung
+und Verbindung mit älterer Firmware. Der C5 akzeptierte mit produktiver
+Zertifikatsfreigabe die Vorschauoption und stellte den normalen Ereigniskanal
+nach Verbindungsabbruch wieder her. Alle sieben vorhandenen Läufe blieben
+erhalten. Die Rundenprüfung verwendete Testdaten.
+
 ## Signierte Abschlussergebnisse mit Firmware 0.2.96
 
 C++ und Browsermodul haben dieselben signierten Ergebnisse für 16 Fahrer

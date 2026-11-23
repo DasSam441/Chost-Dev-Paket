@@ -6,7 +6,8 @@ Entwicklerdokumentation für den ESP32-C5. Der Anschluss verwendet
 **chost-timing v2**. Raumsteuerung ist ab Firmware **0.2.92**, die Umschaltung des ESP-Betriebsmodus ab **0.2.93** verfügbar.
 Ab **0.2.95** kann der ESP32 Ereignisse über einen verschlüsselten Live-Kanal
 direkt an die Zeitnahme senden. Ab **0.2.96** enthält jedes neue
-Abschlussergebnis eine Prüfsumme und Gerätesignatur.
+Abschlussergebnis eine Prüfsumme und Gerätesignatur. Ab **0.2.97** können
+Zeitnahmen eine Rundenzeit bereits vor der Flash-Bestätigung anzeigen.
 
 Der C-Host verbindet die Carrera-App mit einer Zeitnahme, die im Browser läuft.
 Die Betreiberfreigabe kommt von silentserver.eu. Messdaten und Rennleitungsbefehle
@@ -202,6 +203,7 @@ const liveView = new AbortController();
 await host.followEvents({
   signal: liveView.signal,
   onSnapshot: applySnapshot,
+  onLapPreview: ({id, record}) => showPendingLap(id, record),
   onBatch: batch => {
     for (const event of batch.events) applyRecordOnce(event.source, event.record);
     if (batch.positions) replaceCurrentPositions(batch.positions);
@@ -338,6 +340,31 @@ abrufen. Dieser Abruf funktioniert auch auf Firmware vor 0.2.95.
 Der ESP hält maximal einen Kanal je zertifizierter Sitzung. Bis zu vier
 zertifizierte Sitzungen teilen sich das Lesekontingent. Ein nicht mehr lesender
 Empfänger wird getrennt, damit die Rennleitung weiterarbeitet.
+
+### Schnelle Rundenanzeige ab 0.2.97
+
+Setze `onLapPreview` optional bei `followEvents()` oder `subscribe()`, um die
+erfasste Rundenzeit vor dem Schreiben in den Flash anzuzeigen. Verwende
+`onLapPreview({id, record})` für die vorläufige Anzeige. Ein Aufruf mit
+`record:null` entfernt den Eintrag nach seiner Bestätigung in `onBatch`
+oder beim Schließen und Wiederverbinden des Ereigniskanals.
+
+In `onBatch` bleibt die bestätigte Rundenmeldung die Grundlage für Zählung,
+Auswertung und Archiv. Sie trägt dieselbe `id` wie ihre vorläufige Meldung.
+Bei `lap-correction` verweist `measurementId` auf die ursprüngliche Runde.
+Das Browsermodul liefert vorläufige Runden ausschließlich an `onLapPreview`
+und unterdrückt doppelte und verspätete Vorschauen. Der signierte
+Laufabschluss wird wie gewohnt in `onBatch` ausgeliefert. Bestehende
+Integrationen erhalten die bestätigten Ereignisse über den bisherigen Weg.
+
+Eigene Clients können bei `event-stream-v1` und `lap-preview-v1` in
+`info.features` das verschlüsselte `subscribe` um `lapPreview:true` ergänzen.
+Dann liefert der ESP zusätzlich `kind:"lap-preview"` mit `record`. Dieses
+Feld hat das Schema der passenden Runde oder Korrektur ohne
+`sequence`. Nur bestätigte `kind:"events"`-Frames ändern den Ereigniscursor.
+Vorläufige Meldungen werden nur solange gesendet, wie der kleine RAM-Puffer
+sie vorhält. Beim Wiederverbinden werden bestätigte Messungen über den
+bestehenden Cursor und gegebenenfalls das Journal nachgeholt.
 
 ### Abfrage und gespeicherte Messdaten
 

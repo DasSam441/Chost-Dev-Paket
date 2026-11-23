@@ -178,9 +178,14 @@ die Sitzungskennung (weiterhin `jti`), erlaubte Rechte und Gerätezustand.
 `POST /timing/v2/rpc`: Content-Type `application/jose`, Körper ein JWE mit
 Sequenz ab `1`. Antworten ebenfalls JWE. Anfragen erlauben Lesen von Zustand,
 Uhr, Fahrern, Clientdaten und Ereignis-/Historienseiten sowie die getrennt
-berechtigten Rennleitungsbefehle. Abruf erfolgt inkrementell mit Cursor;
-250 Millisekunden als Standard bei aktiver Liveansicht. Die bisherigen externen
-Zugänge werden vollständig gesperrt; es gibt keinen offenen Ereignisstrom.
+berechtigten Rennleitungsbefehle. Der Abruf erfolgt inkrementell mit Cursor.
+Ab 0.2.95 ist der verschlüsselte Live-Kanal mit derselben Zertifikatsfreigabe
+verfügbar. Für reine Abruf-Clients bleibt das 250-Millisekunden-Beispiel gültig.
+
+Ab 0.2.97 erhalten zertifizierte Live-Clients mit `lapPreview:true` auf Wunsch
+vorläufige Runden und Korrekturen vor der Flash-Bestätigung. Die bestätigte
+Meldung trägt dieselbe Ereigniskennung und ist die Grundlage der Wertung.
+[Live-Kanal und Datenformat](https://github.com/DasSam441/Chost-Dev-Paket#schnelle-rundenanzeige-ab-0297).
 
 Rennleitung: Training/Runden-/Zeitrennen, Runden-/Zeitvorgaben, Startbereitschaft,
 Vorlauf, Ampelminimum/-maximum, Strecke, Mindestzeit, Sektoren und gemeinsame

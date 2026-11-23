@@ -25,11 +25,14 @@ The backend uses mutual TLS to request a grant, which is bound to the browser, E
     await host.followEvents({
       signal: liveView.signal,
       onSnapshot: applySnapshot,
+      onLapPreview: showPendingLap,
       onBatch: applyEvents,
       onGap: reportGap
     });
 
 From firmware 0.2.95, the ESP32 sends measurements as they arrive over the encrypted local connection. The browser module reconnects with the last applied cursor and retrieves available durable data after a gap. Use an `AbortController` for `liveView` and abort it when closing the view. Existing clients can still call `events()`. Deduplicate durable records by ID and live records by boot ID and sequence. Replace positions only when a list is supplied. [Live stream protocol in German](README.md#verschlüsselter-live-kanal-ab-0295)
+
+From 0.2.97, `onLapPreview({id, record})` shows lap times before they reach flash. A null record clears the preview. Use the confirmed `onBatch` record with the same ID for scoring and storage.
 
 From 0.2.96 the host signs final results and corrections with its device key. The stream verifies the proof automatically. For archived events use `host.verifyResult(record)` or the exported offline verifier with the confirmed public key. [Protocol](README.md#signierte-abschlussergebnisse-ab-0296).
 
