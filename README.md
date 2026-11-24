@@ -10,6 +10,8 @@ Abschlussergebnis eine Prüfsumme und Gerätesignatur. Ab **0.2.97** können
 Zeitnahmen eine Rundenzeit bereits vor der Flash-Bestätigung anzeigen.
 Ab **0.2.98** sind Konto- und Autoname des Fake Hosts getrennt einstellbar.
 
+Ab **0.2.101** kann ein Eintrag in `positions` und der über `clients` abgerufene `profile` optional `pitLane: {kind, lane}` enthalten. `kind` ist 0 für keine Belegung, 1 für Annäherung und 2 für in der Boxengasse. `lane` ist der unveränderte ganzzahlige Spurwert der Carrera-App. Das Feld erscheint nach der ersten Meldung in dieser Verbindung.
+
 Der C-Host verbindet die Carrera-App mit einer Zeitnahme, die im Browser läuft.
 Die Betreiberfreigabe kommt von silentserver.eu. Messdaten und Rennleitungsbefehle
 laufen verschlüsselt zwischen Browser und ESP32 im lokalen Netz. Zur Integration

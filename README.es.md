@@ -34,6 +34,8 @@ Desde el firmware 0.2.95, el ESP32 envía las mediciones por el canal local cifr
 
 Desde 0.2.98, `configure({fakeHost: {accountName, carName}}, revision)` cambia los nombres de la cuenta y del coche del host virtual. Consulta los valores con `state()`.
 
+Desde **0.2.101**, las entradas de `positions` y el `profile` que devuelve `clients` pueden incluir `pitLane: {kind, lane}`. Los valores de `kind` son 0 para sin ocupación, 1 para aproximación y 2 para dentro de boxes. `lane` es el valor entero comunicado por la aplicación Carrera. El campo aparece después del primer aviso en la conexión actual.
+
 Desde 0.2.97, `onLapPreview({id, record})` muestra la vuelta antes de guardarla en la memoria flash. Un registro nulo borra el avance. Usa el registro confirmado de `onBatch` con el mismo ID para la clasificación y el archivo.
 
 Desde 0.2.96 el ESP32 firma los resultados finales y sus correcciones con su clave de dispositivo. El canal verifica la firma automáticamente. Para resultados archivados, usa `host.verifyResult(record)` o el verificador sin conexión con la clave pública confirmada. [Protocol](README.md#signierte-abschlussergebnisse-ab-0296).

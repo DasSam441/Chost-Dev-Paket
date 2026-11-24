@@ -34,6 +34,8 @@ Dal firmware 0.2.95, l’ESP32 invia le misurazioni in tempo reale attraverso il
 
 Dal firmware 0.2.98, `configure({fakeHost: {accountName, carName}}, revision)` imposta i nomi dell’account e dell’auto dell’host virtuale. Leggi i valori con `state()`.
 
+Dalla versione **0.2.101**, le voci di `positions` e il `profile` restituito da `clients` possono includere `pitLane: {kind, lane}`. I valori di `kind` sono 0 per nessuna occupazione, 1 per avvicinamento e 2 per ingresso nella corsia box. `lane` è il valore intero inviato dall’app Carrera. Il campo compare dopo la prima segnalazione nella connessione corrente.
+
 Dal firmware 0.2.97, `onLapPreview({id, record})` mostra il giro prima della scrittura nella memoria flash. Un record nullo rimuove l’anteprima. Usa il record confermato di `onBatch` con lo stesso ID per la classifica e l’archivio.
 
 Dal firmware 0.2.96 l’ESP32 firma i risultati finali e le correzioni con la propria chiave. Il canale verifica automaticamente la firma. Per i risultati archiviati usa `host.verifyResult(record)` oppure il verificatore offline con la chiave pubblica confermata. [Protocol](README.md#signierte-abschlussergebnisse-ab-0296).

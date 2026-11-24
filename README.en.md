@@ -34,6 +34,8 @@ From firmware 0.2.95, the ESP32 sends measurements as they arrive over the encry
 
 From 0.2.98, use `configure({fakeHost: {accountName, carName}}, revision)` to set the virtual host’s two lobby names. Read the saved values with `state()`.
 
+From **0.2.101**, entries in `positions` and the `profile` returned by `clients` may include `pitLane: {kind, lane}`. The values of `kind` are 0 for none, 1 for approaching and 2 for in the pit lane. `lane` is the integer reported by the Carrera app. The field appears after the first report in the current connection.
+
 From 0.2.97, `onLapPreview({id, record})` shows lap times before they reach flash. A null record clears the preview. Use the confirmed `onBatch` record with the same ID for scoring and storage.
 
 From 0.2.96 the host signs final results and corrections with its device key. The stream verifies the proof automatically. For archived events use `host.verifyResult(record)` or the exported offline verifier with the confirmed public key. [Protocol](README.md#signierte-abschlussergebnisse-ab-0296).

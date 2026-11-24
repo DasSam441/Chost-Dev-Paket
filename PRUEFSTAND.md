@@ -1,5 +1,13 @@
 # Prüfstand der Betreiberanbindung
 
+## Boxengassenstatus mit Firmware 0.2.101
+
+Carrera 1.2.8, Build 294, meldet Status und Spur der Boxengasse. Gemischter
+Protokolltest mit und ohne das zusätzliche Fahrerfeld, einschließlich
+weiterer Rundenmessung und Ablehnung ungültiger Statuswerte. Am physischen
+C5 wurde die Protokollwahl mit beiden Lobby-Suchpaketen geprüft. Beide
+USB-Paketwege sind veröffentlicht.
+
 ## Fake-Host-Namen und Lobbybereitschaft mit Firmware 0.2.98
 
 Am C5 mit produktiver Zertifikatsfreigabe beide Namen gesetzt und im
