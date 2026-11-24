@@ -9,6 +9,7 @@ direkt an die Zeitnahme senden. Ab **0.2.96** enthält jedes neue
 Abschlussergebnis eine Prüfsumme und Gerätesignatur. Ab **0.2.97** können
 Zeitnahmen eine Rundenzeit bereits vor der Flash-Bestätigung anzeigen.
 Ab **0.2.98** sind Konto- und Autoname des Fake Hosts getrennt einstellbar.
+Ab **0.2.110** gibt es [optionale Manufacturer Tags](#manufacturer-tags-ab-02110).
 
 Ab **0.2.101** kann ein Eintrag in `positions` und der über `clients` abgerufene `profile` optional `pitLane: {kind, lane}` enthalten. `kind` ist 0 für keine Belegung, 1 für Annäherung und 2 für in der Boxengasse. `lane` ist der unveränderte ganzzahlige Spurwert der Carrera-App. Das Feld erscheint nach der ersten Meldung in dieser Verbindung.
 
@@ -30,6 +31,32 @@ Zertifikatsverwaltung sind unter den folgenden Adressen erreichbar.
 - [Öffentlicher Prüfschlüssel](https://silentserver.eu/chost/api/v1/operators/key)
 - [Freigaben per Betreiberzertifikat](https://silentserver.eu:47890/chost/api/v1/operators/grant)
 - [Verwaltung der Betreiberzugänge](https://silentserver.eu/chost/operators/)
+
+## Manufacturer Tags ab 0.2.110
+
+Die Einstellung **Betriebsmodus → Manufacturer Tags verwenden** ist ab Werk aus.
+`GET /timing/v2/info` meldet die Unterstützung als `manufacturer-tags-v1`
+in `features` und den aktiven Zustand als `manufacturerTags`.
+Die Einstellung wird am Gerät gespeichert und beim nächsten Start übernommen.
+
+Bei aktivierten Tags steht die erzeugte Fahrzeugkennung in den bisherigen
+Feldern `driver.mac` für Live-Daten, Runden und signierte Ergebnisse sowie
+in `selectedVehicle.address` und `values[].address` für Clientdetails.
+`driver.mac` und die Bluetooth-Zeitschleife nutzen zwölf große Hexadezimalzeichen
+am Stück. Die Adressen in den Clientdetails behalten die Doppelpunkte.
+Die Fahrer-ID bleibt als Zuordnungsschlüssel verfügbar.
+
+Der ESP verwendet den längsten passenden Adressblock der IEEE-Register
+MA-L, MA-M und MA-S und die UUID des Carrera-Fahrers. Alle Fahrzeuge
+desselben registrierten Herstellers ergeben für einen Fahrer dieselbe Kennung.
+Der registrierte Hersteller kann der Lieferant des Funkmoduls sein.
+Für unbekannte Blöcke nutzt der ESP eine gemeinsame Ersatzkennung als
+Herstellerwert. Bis ein Fahrzeug gemeldet wird, bleibt das Adressfeld leer.
+[IEEE-Adressregister](https://standards.ieee.org/products-programs/regauth/)
+
+Die Wiederherstellung über die Schnittstelle zeigt nur Journalabschnitte aus
+der aktiven Tag-Einstellung. Bereits ausgestellte Ergebnisnachweise bleiben
+mit ihren ursprünglichen Daten und Signaturen gültig.
 
 ## Betreiberpaket und Datenweg
 

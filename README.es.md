@@ -2,6 +2,11 @@
 
 ESP32-C5 con protocolo **chost-timing v2**. El canal en directo requiere el firmware **0.2.95**. [Instalador USB](https://silentserver.eu/chost/)
 
+Desde **0.2.110** es posible activar **Manufacturer Tags** en el ESP32.
+El cronometraje externo y por Bluetooth reciben el mismo identificador
+generado por piloto y fabricante. Consulta `info.manufacturerTags`.
+[Campos y recuperación](README.md#manufacturer-tags-ab-02110)
+
 ## Conectar el cronometraje
 
 1. Conecta el ESP32 y los móviles con la aplicación Carrera a la misma red local. En el ESP32, elige **Betriebsmodus → Externe Zeitnahme**. El organizador introduce la dirección local del equipo en el cronometraje, por ejemplo **chost-beispiel.local**.

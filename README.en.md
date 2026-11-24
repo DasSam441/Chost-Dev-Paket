@@ -2,6 +2,11 @@
 
 ESP32-C5 with **chost-timing v2**. Live push requires firmware **0.2.95**. [USB installer](https://silentserver.eu/chost/)
 
+From **0.2.110**, the optional **Manufacturer Tags** setting is off by default.
+When enabled, the same generated driver/manufacturer identifier is used in the
+existing timing address fields and by the Bluetooth timing loop. Check
+`info.manufacturerTags`. [Fields and recovery](README.md#manufacturer-tags-ab-02110)
+
 ## Connect a timing application
 
 1. Put the ESP32 and the Carrera phones on the same local network. On the ESP32 choose **Betriebsmodus → Externe Zeitnahme**. The organizer gives the timing application the host address, for example **chost-beispiel.local**.

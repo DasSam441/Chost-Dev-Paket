@@ -1,5 +1,21 @@
 # Prüfstand der Betreiberanbindung
 
+## Manufacturer Tags mit Firmware 0.2.110
+
+Am C5 in zwei Neustartzuständen geprüft. Der mit dem Betreiberzertifikat
+aufgebaute Kanal lieferte bei ausgeschalteter Option die Originaladresse
+und bei eingeschalteter Option die erzeugte Kennung. Snapshot und
+Clientprofil stimmten überein. Die Bluetooth-Zeitschleife zeigte dieselbe
+Kennung für den Testfahrer und lieferte für eine gezielte Testdurchfahrt
+eine erzeugte Kennung in zwölf Hexadezimalzeichen.
+
+Die C++-Prüfung deckt Fahrzeugkatalog, Runden, Abschlussdaten,
+unterschiedliche Hersteller und die unbekannte Herstellerkennung ab.
+Ein weiterer Protokolltest prüft die sofortige Ergebnisfreigabe mit einem
+zweiten Handy in der Fahrzeugauswahl für Carrera 1.2.6 und 1.2.8.
+Die Geräteprüfung nutzte Testclients sowie eine Bluetooth-Testdurchfahrt.
+Beide USB-Paketwege bestätigen die Firmware 0.2.110.
+
 ## Boxengassenstatus mit Firmware 0.2.101
 
 Carrera 1.2.8, Build 294, meldet Status und Spur der Boxengasse. Gemischter
