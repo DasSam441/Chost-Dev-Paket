@@ -909,6 +909,18 @@ Das ersetzt keine Abnahme der echten `.p12` gegen den produktiven Dienst.
 Das PHP-Beispiel ist eine Integrationshilfe; die jeweilige Backendumgebung
 muss es mit ihrer Zertifikatsdatei und ihrer tatsächlich bestätigten URL prüfen.
 
+## Geschützte Laufdateien
+
+Der ESP lädt einen abgeschlossenen Lauf als `.chost` herunter. Die Datei enthält einen signierten Kopf und verschlüsselte Blöcke mit den Originaldaten. Aktive Betreiberzertifikate können auch Dateien öffnen, die vor der Ausstellung ihres Zertifikats erstellt wurden. Der Freigabedienst erhält dafür den signierten Kopf.
+
+Die Zeitnahme prüft und öffnet die Datei in ihrem Backend. Dort bleiben die `.p12` und der vom Freigabedienst abgerufene Dateischlüssel. In `backend-example.php` zeigt `chost_unlock_protected_run`, wie der Kopf mit dem bestehenden Betreiberzertifikat an den Freigabedienst übergeben wird. Den Schlüssel nur im Speicher für diesen Import halten.
+
+`openProtectedRun(bytes, { unlock, expectedDeviceKeyId })` aus `chost-client.mjs` prüft die Geräte-Signatur, die Reihenfolge der authentifizierten Blöcke, die Länge und die SHA-256-Prüfsumme. `unlock` erhält `{ schema: 1, header }` und liefert `{ schema: 1, headerSha256, key }`. `bytes` ist ein `Uint8Array` oder `ArrayBuffer`. Bei einem bekannten Host `expectedDeviceKeyId` aus dem authentisierten Geräteprofil vorgeben, damit der Import den Lauf diesem Host zuverlässig zuordnet.
+
+Nach erfolgreicher Prüfung enthält `original` die unveränderten Bytes und `metadata` die signierten Angaben. `metadata.format` bezeichnet einen lokalen Journalexport (`chost-ndjson`) oder einen kompletten NanoTimer-Archivexport (`chost-archive-json`). Das Backend nutzt `POST https://silentserver.eu:47890/chost/api/v1/operators/export-unlock` mit seiner Betreiber-P12. Der Freigabedienst entscheidet anhand der aktuell gültigen Zulassung. Die Betreiberkennung ist kein Bestandteil des Datei-Headers.
+
+Am C5 mit lokal installierter Firmware 0.2.123 geprüft. Sobald der öffentliche Schlüssel des Freigabedienstes auf dem ESP gespeichert ist, lassen sich lokal gespeicherte Läufe auch nach einem Neustart ohne Internet verschlüsselt herunterladen. Die zertifizierte Zeitnahme ruft den Entschlüsselungsschlüssel online ab.
+
 ## Standards
 
 - [PKCS#12, RFC 7292](https://www.rfc-editor.org/rfc/rfc7292.html)

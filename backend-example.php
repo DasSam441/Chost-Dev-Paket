@@ -37,7 +37,33 @@ function chost_issue_grant(array $request, array $configuration, string $actor, 
         'sessionSeconds' => $duration,
         'actor' => $actor,
     ];
-    $url = $configuration['grantUrl'];
+    $grant = chost_operator_json($configuration['grantUrl'], $body, $configuration);
+    if (($grant['schema'] ?? null) !== 1 || !is_string($grant['grant'] ?? null)) {
+        throw new RuntimeException('Invalid authorization reply');
+    }
+    return ['schema' => 1, 'grant' => $grant['grant']];
+}
+
+function chost_unlock_protected_run(string $header, array $configuration): array
+{
+    if (strlen($header) > 8192 || !preg_match('/^[A-Za-z0-9_-]+\.[A-Za-z0-9_-]+\.[A-Za-z0-9_-]+$/D', $header)) {
+        throw new InvalidArgumentException('Invalid signed run header');
+    }
+    $reply = chost_operator_json(
+        'https://silentserver.eu:47890/chost/api/v1/operators/export-unlock',
+        ['schema' => 1, 'header' => $header],
+        $configuration
+    );
+    $binding = rtrim(strtr(base64_encode(hash('sha256', $header, true)), '+/', '-_'), '=');
+    if (($reply['schema'] ?? null) !== 1 || ($reply['headerSha256'] ?? null) !== $binding ||
+        !is_string($reply['key'] ?? null) || !preg_match('/^[A-Za-z0-9_-]{43}$/D', $reply['key'])) {
+        throw new RuntimeException('Invalid protected run authorization reply');
+    }
+    return ['schema' => 1, 'headerSha256' => $binding, 'key' => $reply['key']];
+}
+
+function chost_operator_json(string $url, array $body, array $configuration): array
+{
     $parsed = parse_url($url);
     if (($parsed['scheme'] ?? '') !== 'https' || ($parsed['host'] ?? '') !== 'silentserver.eu') {
         throw new RuntimeException('Unapproved authorization service');
@@ -46,7 +72,7 @@ function chost_issue_grant(array $request, array $configuration, string $actor, 
     curl_setopt_array($curl, [
         CURLOPT_POST => true,
         CURLOPT_POSTFIELDS => json_encode($body, JSON_THROW_ON_ERROR),
-        CURLOPT_HTTPHEADER => ['Content-Type: application/json'],
+        CURLOPT_HTTPHEADER => ['Content-Type: application/json', 'Accept: application/json', 'Cache-Control: no-store'],
         CURLOPT_SSLCERT => $configuration['certificateFile'],
         CURLOPT_SSLCERTTYPE => 'P12',
         CURLOPT_SSLCERTPASSWD => $configuration['certificatePassword'],
@@ -63,11 +89,11 @@ function chost_issue_grant(array $request, array $configuration, string $actor, 
         if (!is_string($response) || $status !== 200 || strlen($response) > 16384) {
             throw new RuntimeException('Authorization service rejected the request');
         }
-        $grant = json_decode($response, true, 16, JSON_THROW_ON_ERROR);
-        if (($grant['schema'] ?? null) !== 1 || !is_string($grant['grant'] ?? null)) {
+        $data = json_decode($response, true, 16, JSON_THROW_ON_ERROR);
+        if (!is_array($data)) {
             throw new RuntimeException('Invalid authorization reply');
         }
-        return ['schema' => 1, 'grant' => $grant['grant']];
+        return $data;
     } finally {
         curl_close($curl);
     }

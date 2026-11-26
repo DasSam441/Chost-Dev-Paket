@@ -68,11 +68,58 @@ export async function encrypt(key,kid,sequence,plain,direction='request'){
  const iv=ivFor(sequence);const encrypted=new Uint8Array(await crypto.subtle.encrypt({name:'AES-GCM',iv,additionalData:utf8.encode(header),tagLength:128},key,utf8.encode(JSON.stringify(plain))));
  return header+'..'+base64url(iv)+'.'+base64url(encrypted.subarray(0,-16))+'.'+base64url(encrypted.subarray(-16));
 }
-export async function decrypt(key,kid,sequence,compact,direction='response'){
+async function decryptBytes(key,kid,sequence,compact,direction){
  const p=compact.split('.');if(p.length!==5||p[1]!=='')throw Error('Ungültige verschlüsselte Antwort.');const h=JSON.parse(text.decode(unbase64url(p[0])));
  if(Object.keys(h).length!==5||h.alg!=='dir'||h.enc!=='A256GCM'||h.kid!==kid||h.chost_direction!==direction||counter(h.chost_seq)!==sequence||base64url(ivFor(sequence))!==p[2])throw Error('Antwort gehört nicht zu dieser Anfrage.');
- const plain=await crypto.subtle.decrypt({name:'AES-GCM',iv:unbase64url(p[2]),additionalData:utf8.encode(p[0]),tagLength:128},key,join(unbase64url(p[3]),unbase64url(p[4])));
- return JSON.parse(text.decode(plain));
+ return new Uint8Array(await crypto.subtle.decrypt({name:'AES-GCM',iv:unbase64url(p[2]),additionalData:utf8.encode(p[0]),tagLength:128},key,join(unbase64url(p[3]),unbase64url(p[4]))));
+}
+export async function decrypt(key,kid,sequence,compact,direction='response'){
+ return JSON.parse(text.decode(await decryptBytes(key,kid,sequence,compact,direction)));
+}
+
+export async function openProtectedRun(source,{unlock,expectedDeviceKeyId}={}){
+ if(typeof unlock!=='function')throw Error('Freigabe für den geschützten Lauf fehlt.');
+ const bytes=source instanceof Uint8Array?source:new Uint8Array(source);
+ if(!bytes.length||bytes.length>16*1024*1024||bytes[bytes.length-1]!==10)throw Error('Datei unvollständig oder zu groß.');
+ const lines=text.decode(bytes).split('\n');
+ const header=lines[1];
+ if(lines[0]!=='CHOST-RUN-EXPORT-1'||!header||header.length>8192)throw Error('Unbekanntes Laufdateiformat.');
+ const parts=header.split('.');
+ if(parts.length!==3)throw Error('Ungültige Laufsignatur.');
+ const claims=JSON.parse(text.decode(unbase64url(parts[1])));
+ const fields=['schema','aud','deviceId','deviceKeyId','identityKey','runId','format','bytes','sha256','keyId','ephemeralKey'];
+ if(!hasFields(claims,fields)||claims.schema!==1||claims.aud!=='chost-run-export-v1'||
+    !hexId(claims.deviceId)||!hexId(claims.runId)||!['chost-ndjson','chost-archive-json'].includes(claims.format)||
+    !Number.isSafeInteger(claims.bytes)||claims.bytes<1||claims.bytes>8*1024*1024||
+    typeof claims.sha256!=='string'||!/^[0-9a-f]{64}$/.test(claims.sha256)||
+    unbase64url(claims.keyId).length!==32)throw Error('Ungültiger Laufdateikopf.');
+ jwk(claims.ephemeralKey);
+ const identity=jwk(claims.identityKey);
+ if(await thumbprint(identity)!==claims.deviceKeyId||
+    (expectedDeviceKeyId!==undefined&&claims.deviceKeyId!==expectedDeviceKeyId))throw Error('Gerätekennung stimmt nicht.');
+ await verifyJws(header,identity,'chost-run-export+jws',claims.deviceKeyId);
+ const frameCount=Math.ceil(claims.bytes/1536);
+ if(lines.length!==frameCount+3||lines.slice(2,-1).some(line=>!line||line.length>4096))
+  throw Error('Verschlüsselte Laufdatei ist unvollständig.');
+ const binding=await hash(header);
+ const reply=await unlock({schema:1,header});
+ if(!hasFields(reply,['schema','headerSha256','key'])||reply.schema!==1||reply.headerSha256!==binding)
+  throw Error('Freigabe gehört zu einer anderen Laufdatei.');
+ const keyBytes=unbase64url(reply.key);
+ if(keyBytes.length!==32)throw Error('Ungültiger Dateischlüssel.');
+ let key;
+ try{key=await crypto.subtle.importKey('raw',keyBytes,'AES-GCM',false,['decrypt']);}
+ finally{keyBytes.fill(0);}
+ const original=new Uint8Array(claims.bytes);
+ for(let index=0,offset=0;index<frameCount;++index){
+  const part=await decryptBytes(key,binding,BigInt(index+1),lines[index+2],'run-export');
+  if(part.length!==Math.min(1536,original.length-offset))throw Error('Blockgröße stimmt nicht.');
+  original.set(part,offset);offset+=part.length;
+ }
+ const digest=new Uint8Array(await crypto.subtle.digest('SHA-256',original));
+ const hex=Array.from(digest,value=>value.toString(16).padStart(2,'0')).join('');
+ if(hex!==claims.sha256)throw Error('Lauf-Prüfsumme stimmt nicht.');
+ return {original,metadata:claims};
 }
 export class ChostError extends Error{constructor(reply){super(reply.message??reply.error??'Anfrage fehlgeschlagen.');Object.assign(this,reply);}}
 class StreamInterrupted extends Error {}

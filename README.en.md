@@ -48,3 +48,9 @@ From 0.2.96 the host signs final results and corrections with its device key. Th
 Sector indices in configuration start at 1. Position and snapshot sector indices start at 0. A free track has no module code or module sector list. A target count above one groups target detections. Race lap times have millisecond precision. Position reports describe the last update received from the app.
 
 On a real C5 we verified certificate authorization, permitted and denied controls, settings round trips, reading, and creating a room from the host page. Timing transport and data processing also passed automated tests. This test did not include a driven race across two physical hosts. [Protocol reference in German](README.md) · [Test report in German](PRUEFSTAND.md)
+
+## Protected run downloads
+
+The ESP downloads a signed, encrypted `.chost` file without asking for a recipient. A timing provider can open it with any currently valid operator PKCS#12, including a certificate issued after the download. Once the public export key has been cached, local runs can be downloaded even after an offline restart.
+
+The operator backend calls `chost_unlock_protected_run` in `backend-example.php` with its PKCS#12. Use `openProtectedRun(bytes, { unlock, expectedDeviceKeyId })` from `chost-client.mjs` to verify and decrypt. For a known host, use the device key ID from its authenticated profile. Keep the certificate and the released key in the backend. Verified on a C5 with local firmware 0.2.123.

@@ -48,3 +48,9 @@ Desde 0.2.96 el ESP32 firma los resultados finales y sus correcciones con su cla
 En los ajustes, los índices de los sectores empiezan en 1. En las posiciones y en **snapshot**, empiezan en 0. La pista libre carece de código de módulos y de puntos de sector por módulo. Con varios objetivos se agrupan detecciones. Los tiempos de vuelta se expresan con precisión de milisegundos. La posición corresponde al último mensaje recibido de la aplicación.
 
 En un ESP32-C5 se verificaron la autorización con certificado, los permisos, los cambios de configuración, la lectura y la creación de una sala desde el equipo. Los datos de cronometraje se comprobaron también de forma automatizada. La prueba no incluyó una carrera real con dos ESP32. [Referencia del protocolo en alemán](README.md) · [Informe de pruebas en alemán](PRUEFSTAND.md)
+
+## Descargas de sesiones protegidas
+
+El ESP descarga un archivo `.chost` firmado y cifrado sin pedir un destinatario. Cualquier certificado de operador PKCS#12 vigente puede abrirlo, incluso si se emitió después de la descarga. Cuando el ESP ya ha guardado la clave pública de exportación, los archivos locales también se pueden descargar tras un reinicio sin Internet.
+
+El servidor del operador utiliza `chost_unlock_protected_run` de `backend-example.php` con su PKCS#12 y `openProtectedRun(bytes, { unlock, expectedDeviceKeyId })` de `chost-client.mjs` para verificar y descifrar. Para un host conocido, utiliza el identificador de clave de su perfil autenticado. Guarda el certificado y la clave de descifrado en el servidor. Probado en un C5 con firmware local 0.2.123.

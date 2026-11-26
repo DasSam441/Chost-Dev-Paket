@@ -48,3 +48,9 @@ Dal firmware 0.2.96 l’ESP32 firma i risultati finali e le correzioni con la pr
 Nella configurazione gli indici dei settori partono da 1. Nelle posizioni e nello **snapshot** partono da 0. La pista libera non usa un codice dei moduli o punti di settore legati ai moduli. Con più bersagli i rilevamenti vengono raggruppati. I tempi sul giro hanno precisione al millisecondo. La posizione rappresenta l’ultimo dato ricevuto dall’app.
 
 Su un ESP32-C5 sono stati verificati l’accesso con certificato, i permessi, le modifiche, la lettura e la creazione di una sala dalla pagina dell’host. La trasmissione dei dati è stata verificata anche con test automatici. Questa verifica non comprende una gara reale con due ESP32. [Riferimento del protocollo in tedesco](README.md) · [Rapporto di prova in tedesco](PRUEFSTAND.md)
+
+## Download delle sessioni protette
+
+L'ESP scarica un file `.chost` firmato e cifrato senza richiedere un destinatario. Il provider può aprirlo con qualsiasi certificato operatore PKCS#12 valido, anche se è stato emesso dopo il download. Dopo che l'ESP ha salvato la chiave pubblica di esportazione, i file locali si possono scaricare anche dopo un riavvio senza Internet.
+
+Il backend usa `chost_unlock_protected_run` da `backend-example.php` con il proprio PKCS#12 e `openProtectedRun(bytes, { unlock, expectedDeviceKeyId })` da `chost-client.mjs` per verificare e decifrare. Per un host noto, usa l'identificativo della chiave del profilo autenticato. Mantieni il certificato e la chiave di decifratura sul backend. Verificato su C5 con firmware locale 0.2.123.

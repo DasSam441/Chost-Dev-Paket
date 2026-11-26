@@ -290,3 +290,7 @@ Stand. Für diesen Veröffentlichungsabschluss wurde kein weiterer Flash-/
 Browser-Erstinstallationslauf behauptet.
 Ein echter Drittanbieter benötigt seine eigene individuelle Zugangsdatei;
 das vorhandene beschränkte Prüfzertifikat wird nicht weitergegeben.
+
+## Geschützte Laufdatei auf dem C5
+
+Mit lokal installierter Firmware 0.2.123 wurde ein vorhandener Archivlauf am echten C5 als `.chost` heruntergeladen und mit einem gültigen Betreiberzertifikat am produktiven Dienst geöffnet. Länge, Originalbytes und SHA-256-Signaturangabe stimmen überein. Der Dienst lehnte die Anfrage ohne Betreiberzertifikat ab. Änderungen und abgeschnittene Blöcke wurden im unabhängigen Firmware-/Importtest abgewiesen.
